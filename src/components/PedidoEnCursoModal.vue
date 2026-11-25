@@ -157,6 +157,13 @@ async function onEnviarComanda() {
   await enviarComandaPendiente()
 }
 
+/** Reimprime la comanda completa; lo pendiente queda incluido, así que se marca como enviado. */
+async function onReimprimirComanda(): Promise<void> {
+  const items = pendiente.items.value.map((i) => ({ ...i }))
+  const impresa = await imprimirComanda(ventaActual.value)
+  if (impresa && items.length > 0) pendiente.marcarEnviada(items)
+}
+
 async function onCerrarPanel() {
   if (pendiente.cantidadPendiente.value > 0) {
     const cantidad = pendiente.cantidadPendiente.value
@@ -189,8 +196,18 @@ async function confirmarCobro() {
   try {
     const ventaCobrada = await cerrarPedido(ventaActual.value.id, { metodo_pago: metodoPagoCobro.value })
     showConfirmCobro.value = false
-    if (pendiente.cantidadPendiente.value > 0 && (await comandaAutoActiva())) {
-      void enviarComandaPendiente()
+    const sinEnviar = pendiente.cantidadPendiente.value
+    if (sinEnviar > 0) {
+      if (await comandaAutoActiva()) {
+        // Se espera la impresión antes de limpiar la lista de pendientes.
+        await enviarComandaPendiente()
+      } else {
+        pushToast(
+          `Se cobró la mesa, pero ${sinEnviar} producto${sinEnviar === 1 ? '' : 's'} no se ` +
+            'enviaron a preparación. Avisa a cocina o reimprime la comanda desde Órdenes.',
+          'error',
+        )
+      }
     }
     pendiente.limpiar()
     void facturaAutoOToast(ventaCobrada, 'Mesa cobrada y cerrada')
@@ -419,7 +436,7 @@ async function confirmarDescartar() {
             type="button"
             class="btn-secondary"
             :disabled="!puedeCobrar"
-            @click="imprimirComanda(ventaActual)"
+            @click="onReimprimirComanda"
           >
             Reimprimir comanda
           </button>

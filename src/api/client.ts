@@ -76,8 +76,14 @@ async function request<TResponse>(
   const isJson = contentType.includes('application/json')
   const data = isJson ? await response.json().catch(() => undefined) : undefined
 
-  // Token vencido, revocado o usuario desactivado: volver al login.
-  if (response.status === 401 && auth && getToken()) {
+  // Token vencido, revocado, usuario desactivado o sede desactivada: volver al login.
+  const sedeDesactivada =
+    response.status === 403 &&
+    isJson &&
+    !!data &&
+    typeof data === 'object' &&
+    (data as { detail?: unknown }).detail === 'Tu sede está desactivada.'
+  if ((response.status === 401 || sedeDesactivada) && auth && getToken()) {
     cerrarSesion()
     const destino = window.location.pathname + window.location.search
     window.location.assign(`/login?redirect=${encodeURIComponent(destino)}`)

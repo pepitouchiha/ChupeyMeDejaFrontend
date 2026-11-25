@@ -14,16 +14,21 @@ import type {
 const actual = ref<CajaActual | null>(null)
 const isLoadingActual = ref(false)
 const actualError = ref('')
+// Cada consulta o cambio de la caja incrementa este número; una respuesta que
+// llega tarde (de una consulta anterior) se descarta para no pisar un estado nuevo.
+let secuencia = 0
 
 async function cargarActual(): Promise<void> {
+  const mia = ++secuencia
   isLoadingActual.value = true
   actualError.value = ''
   try {
-    actual.value = await getCajaActual()
+    const respuesta = await getCajaActual()
+    if (mia === secuencia) actual.value = respuesta
   } catch {
-    actualError.value = 'No fue posible consultar el estado de la caja.'
+    if (mia === secuencia) actualError.value = 'No fue posible consultar el estado de la caja.'
   } finally {
-    isLoadingActual.value = false
+    if (mia === secuencia) isLoadingActual.value = false
   }
 }
 
@@ -33,7 +38,9 @@ export function useCaja() {
   const cerrada = computed(() => abierta.value === false)
 
   async function abrir(payload: CajaAbrir): Promise<void> {
-    actual.value = await abrirCaja(payload)
+    const respuesta = await abrirCaja(payload)
+    secuencia++
+    actual.value = respuesta
   }
 
   async function cerrar(payload: CajaCerrar): Promise<CajaSesion> {

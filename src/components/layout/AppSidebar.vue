@@ -184,7 +184,9 @@ function onCambiarSede(event: Event) {
 
 function onLogout() {
   cerrarSesion()
-  router.push({ name: 'login' })
+  // Recarga completa: descarta configuración, categorías y otros datos de la
+  // sede anterior que quedan en memoria (otro usuario puede entrar después).
+  window.location.assign('/login')
 }
 </script>
 

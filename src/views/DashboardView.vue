@@ -3,6 +3,7 @@ import { computed, onMounted } from 'vue'
 import { useReportes } from '../composables/useReportes'
 import { useVentas } from '../composables/useVentas'
 import { useMesas } from '../composables/useMesas'
+import { useAuth } from '../composables/useAuth'
 import { formatCOP } from '../utils/currency'
 
 const { reporteHoy, isLoadingHoy, errorHoy, loadHoy, alertasStock, isLoadingAlertas, errorAlertas, loadAlertasStock } =
@@ -10,6 +11,8 @@ const { reporteHoy, isLoadingHoy, errorHoy, loadHoy, alertasStock, isLoadingAler
 
 const { ventas, isLoading: isLoadingVentas, loadError: errorVentas, load: loadVentas } = useVentas()
 const { mesas, load: loadMesas } = useMesas()
+// Los cajeros no tienen acceso a Inventario: la tarjeta no es un enlace para ellos.
+const { esAdmin } = useAuth()
 
 onMounted(() => {
   loadHoy()
@@ -67,17 +70,28 @@ function mesaNombre(mesaId: number | null): string {
         <span v-else class="kpi-value kpi-value--cyan">{{ numVentasHoy }}</span>
       </div>
 
-      <router-link :to="{ name: 'inventario' }" class="kpi-card kpi-card--magenta kpi-card--link">
+      <component
+        :is="esAdmin ? 'router-link' : 'div'"
+        :to="esAdmin ? { name: 'inventario' } : undefined"
+        class="kpi-card kpi-card--magenta"
+        :class="{ 'kpi-card--link': esAdmin }"
+      >
         <span class="kpi-label">Insumos en alerta</span>
         <p v-if="isLoadingAlertas" class="status">Cargando…</p>
         <p v-else-if="errorAlertas" class="error" role="alert">{{ errorAlertas }}</p>
         <template v-else>
           <span class="kpi-value kpi-value--magenta">{{ alertasStock.length }}</span>
           <span class="kpi-hint">
-            {{ alertasStock.length === 0 ? 'Todo el stock está en orden' : 'Bajo o crítico · ver inventario' }}
+            {{
+              alertasStock.length === 0
+                ? 'Todo el stock está en orden'
+                : esAdmin
+                  ? 'Bajo o crítico · ver inventario'
+                  : 'Bajo o crítico · avisa al administrador'
+            }}
           </span>
         </template>
-      </router-link>
+      </component>
 
     </div>
 

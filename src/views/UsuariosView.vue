@@ -303,14 +303,19 @@ async function guardarSede() {
     } else {
       sedes.value = [...sedes.value, await createSede(payload)]
     }
-    // Actualiza el selector de sede del menú.
-    guardarSesion(await getSesion())
     pushToast('Sede guardada')
     sedeFormAbierto.value = false
   } catch (err) {
     sedeError.value = mensaje(err, 'No fue posible guardar la sede.')
+    return
   } finally {
     guardando.value = false
+  }
+  // Actualiza el selector de sede del menú; si falla, la sede ya quedó guardada.
+  try {
+    guardarSesion(await getSesion())
+  } catch {
+    /* se actualizará en la próxima carga de la app */
   }
 }
 </script>

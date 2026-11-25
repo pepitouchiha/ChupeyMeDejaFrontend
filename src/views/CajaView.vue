@@ -210,17 +210,21 @@ async function openDetalle(sesion: CajaSesion) {
   detalleOpen.value = true
   detalleLoadingId.value = sesion.id
   try {
-    detalle.value = await loadSesion(sesion.id)
+    const respuesta = await loadSesion(sesion.id)
+    if (detalleLoadingId.value === sesion.id) detalle.value = respuesta
   } catch (err) {
-    detalleError.value = messageFor(err, 'No fue posible cargar el detalle de la sesión.')
+    if (detalleLoadingId.value === sesion.id) {
+      detalleError.value = messageFor(err, 'No fue posible cargar el detalle de la sesión.')
+    }
   } finally {
-    detalleLoadingId.value = null
+    if (detalleLoadingId.value === sesion.id) detalleLoadingId.value = null
   }
 }
 
 function closeDetalle() {
   detalleOpen.value = false
   detalle.value = null
+  detalleLoadingId.value = null
 }
 
 function metodoLabel(m: string | null): string {
