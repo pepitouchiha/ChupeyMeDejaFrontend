@@ -142,7 +142,7 @@ hizo falta ningún ajuste de contrato.
 
 **Verificado contra el backend real** (`http://localhost:8000`, ya corriendo,
 sin levantar una segunda instancia, tal como se indicó). Se creó un usuario
-de prueba dedicado (`test-fe033036@brainfreeze.com`, vía
+de prueba dedicado (`test-fe033036@chupeymedeja.com`, vía
 `python -m app.scripts.crear_usuario`, sin tocar contraseñas de usuarios
 existentes) y una mesa de prueba identificable (`TEST-FE-QA`, id `2`) para no
 mezclar con datos reales del negocio. Con `curl` replicando exactamente los

@@ -59,3 +59,130 @@ select {
 *::-webkit-scrollbar-thumb:hover {
   background: var(--color-cyan);
 }
+
+/* ------------------------------------------------------------------------
+ * Capa para celular y tablet (≤ 900px).
+ * Las vistas tienen estilos `scoped`; el prefijo #app da la especificidad
+ * necesaria para que estas reglas generales se apliquen a todas.
+ * ---------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  /* Las tablas se desplazan dentro de su tarjeta en vez de ensanchar la página. */
+  #app .content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #app .content th,
+  #app .content td {
+    white-space: nowrap;
+  }
+
+  /* Encabezados de pantalla: el botón principal baja si no cabe. */
+  #app .content .view-header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  #app .content .view-header h1 {
+    font-size: 20px;
+  }
+
+  /* 16px en campos evita que el iPhone haga zoom al tocarlos. */
+  #app input:not([type='checkbox']):not([type='radio']),
+  #app select,
+  #app textarea {
+    font-size: 16px;
+  }
+
+  /* Imágenes y medios nunca más anchos que la pantalla. */
+  #app img,
+  #app svg,
+  #app video {
+    max-width: 100%;
+  }
+}
+
+/* Tablas marcadas con .tabla-tarjetas: en el celular cada fila es una tarjeta.
+ * Cada <td> lleva data-label con el nombre de su columna; .celda-titulo ocupa
+ * todo el ancho arriba y la última celda (acciones) todo el ancho abajo. */
+@media (max-width: 700px) {
+  #app .content table.tabla-tarjetas {
+    display: block;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  #app .content table.tabla-tarjetas thead {
+    display: none;
+  }
+
+  #app .content table.tabla-tarjetas tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  #app .content table.tabla-tarjetas tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 14px;
+    padding: 14px;
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+
+  #app .content table.tabla-tarjetas td {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    white-space: normal;
+    text-align: left;
+  }
+
+  #app .content table.tabla-tarjetas td[data-label]::before {
+    content: attr(data-label);
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--color-text-muted);
+  }
+
+  #app .content table.tabla-tarjetas td.celda-titulo {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  #app .content table.tabla-tarjetas td:last-child:not([data-label]) {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border-soft);
+  }
+
+  #app .content table.tabla-tarjetas td:last-child:not([data-label]) > * {
+    flex-wrap: wrap;
+  }
+
+  #app .content table.tabla-tarjetas td.thumb-cell {
+    display: none;
+  }
+
+  #app .content table.tabla-tarjetas td[colspan] {
+    grid-column: 1 / -1;
+  }
+}

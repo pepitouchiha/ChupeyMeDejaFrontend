@@ -143,7 +143,7 @@ una bandera adicional.
    verificación de esta misma tarea).
 
 **Nota de dependencia:** BE-017 está `done`, pero recordar el caveat
-operativo documentado ahí: si el entorno local tiene una `brainfreeze.db`
+operativo documentado ahí: si el entorno local tiene una `chupeymedeja.db`
 preexistente sin la columna `costo`, hay que borrarla antes de levantar el
 servidor (`uvicorn`) para poder probar este flujo end-to-end contra el
 backend real.

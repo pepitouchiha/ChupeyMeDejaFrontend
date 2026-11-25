@@ -5,13 +5,15 @@ import { useVentas } from '../composables/useVentas'
 import { useMesas } from '../composables/useMesas'
 import { formatCOP } from '../utils/currency'
 
-const { reporteHoy, isLoadingHoy, errorHoy, loadHoy } = useReportes()
+const { reporteHoy, isLoadingHoy, errorHoy, loadHoy, alertasStock, isLoadingAlertas, errorAlertas, loadAlertasStock } =
+  useReportes()
 
 const { ventas, isLoading: isLoadingVentas, loadError: errorVentas, load: loadVentas } = useVentas()
 const { mesas, load: loadMesas } = useMesas()
 
 onMounted(() => {
   loadHoy()
+  loadAlertasStock()
   loadVentas()
   loadMesas()
 })
@@ -64,6 +66,18 @@ function mesaNombre(mesaId: number | null): string {
         <p v-else-if="errorHoy" class="error" role="alert">{{ errorHoy }}</p>
         <span v-else class="kpi-value kpi-value--cyan">{{ numVentasHoy }}</span>
       </div>
+
+      <router-link :to="{ name: 'inventario' }" class="kpi-card kpi-card--magenta kpi-card--link">
+        <span class="kpi-label">Insumos en alerta</span>
+        <p v-if="isLoadingAlertas" class="status">Cargando…</p>
+        <p v-else-if="errorAlertas" class="error" role="alert">{{ errorAlertas }}</p>
+        <template v-else>
+          <span class="kpi-value kpi-value--magenta">{{ alertasStock.length }}</span>
+          <span class="kpi-hint">
+            {{ alertasStock.length === 0 ? 'Todo el stock está en orden' : 'Bajo o crítico · ver inventario' }}
+          </span>
+        </template>
+      </router-link>
 
     </div>
 
@@ -145,6 +159,25 @@ function mesaNombre(mesaId: number | null): string {
 
 .kpi-card--orange {
   border-top-color: var(--color-orange);
+}
+
+.kpi-card--link {
+  text-decoration: none;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.kpi-card--link:hover {
+  background: var(--color-surface-alt);
+}
+
+.kpi-card--link:focus-visible {
+  outline: 2px solid var(--color-cyan);
+  outline-offset: 2px;
+}
+
+.kpi-hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .kpi-label {

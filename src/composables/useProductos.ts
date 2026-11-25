@@ -1,8 +1,14 @@
 import { ref } from 'vue'
-import { createProducto, deleteProducto, listProductos, updateProducto } from '../api/productos'
+import {
+  createProducto,
+  deleteProducto,
+  listProductos,
+  setProductoInsumos,
+  updateProducto,
+} from '../api/productos'
 import type { ListProductosParams } from '../api/productos'
 import { ApiError } from '../api/client'
-import type { Producto, ProductoCreate, ProductoUpdate } from '../api/types'
+import type { Producto, ProductoCreate, ProductoInsumoIn, ProductoUpdate } from '../api/types'
 
 export function useProductos() {
   const productos = ref<Producto[]>([])
@@ -38,6 +44,10 @@ export function useProductos() {
     return updateProducto(id, payload)
   }
 
+  function setInsumos(id: number, insumos: ProductoInsumoIn[]): Promise<Producto> {
+    return setProductoInsumos(id, insumos)
+  }
+
   function remove(id: number): Promise<void> {
     return deleteProducto(id)
   }
@@ -49,5 +59,5 @@ export function useProductos() {
     return fallback
   }
 
-  return { productos, total, isLoading, loadError, loadTotal, load, create, update, remove, messageFor }
+  return { productos, total, isLoading, loadError, loadTotal, load, create, update, setInsumos, remove, messageFor }
 }

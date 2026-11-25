@@ -1,7 +1,18 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import type { Rol } from '../api/types'
 import { useAuth } from '../composables/useAuth'
 import AuthLayout from '../layouts/AuthLayout.vue'
 import DefaultLayout from '../layouts/DefaultLayout.vue'
+
+const ADMIN: Rol[] = ['superadmin', 'dueno', 'administrador']
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    /** Roles que pueden entrar. Sin `roles`, cualquier usuario autenticado. */
+    roles?: Rol[]
+  }
+}
 
 const routes: RouteRecordRaw[] = [
   {
@@ -28,11 +39,14 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'inventario',
-        redirect: '/dashboard',
+        name: 'inventario',
+        meta: { roles: ADMIN },
+        component: () => import('../views/InventarioView.vue'),
       },
       {
         path: 'productos',
         name: 'productos',
+        meta: { roles: ADMIN },
         component: () => import('../views/ProductosView.vue'),
       },
       {
@@ -53,17 +67,49 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'historial',
         name: 'historial',
+        meta: { roles: ADMIN },
         component: () => import('../views/HistorialView.vue'),
       },
       {
         path: 'contabilidad',
         name: 'contabilidad',
+        meta: { roles: ADMIN },
         component: () => import('../views/ContabilidadView.vue'),
       },
       {
         path: 'categorias',
         name: 'categorias',
+        meta: { roles: ADMIN },
         component: () => import('../views/CategoriasView.vue'),
+      },
+      {
+        path: 'caja',
+        name: 'caja',
+        component: () => import('../views/CajaView.vue'),
+      },
+      {
+        path: 'gastos',
+        name: 'gastos',
+        meta: { roles: ADMIN },
+        component: () => import('../views/GastosView.vue'),
+      },
+      {
+        path: 'trabajadores',
+        name: 'trabajadores',
+        meta: { roles: ADMIN },
+        component: () => import('../views/TrabajadoresView.vue'),
+      },
+      {
+        path: 'usuarios',
+        name: 'usuarios',
+        meta: { roles: ADMIN },
+        component: () => import('../views/UsuariosView.vue'),
+      },
+      {
+        path: 'configuracion',
+        name: 'configuracion',
+        meta: { roles: ADMIN },
+        component: () => import('../views/ConfiguracionView.vue'),
       },
     ],
   },
@@ -80,7 +126,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, tieneRol, esSuperadmin, sedes } = useAuth()
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
 
   if (requiresAuth && !isAuthenticated()) {
@@ -88,6 +134,16 @@ router.beforeEach((to) => {
   }
 
   if (to.name === 'login' && isAuthenticated()) {
+    return { name: 'dashboard' }
+  }
+
+  // Super admin recién instalado y sin sedes: lo primero es crearlas.
+  if (requiresAuth && esSuperadmin.value && sedes.value.length === 0 && to.name !== 'usuarios') {
+    return { name: 'usuarios' }
+  }
+
+  const roles = to.meta.roles
+  if (roles && !tieneRol(...roles)) {
     return { name: 'dashboard' }
   }
 

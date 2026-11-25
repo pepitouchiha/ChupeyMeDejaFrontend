@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { Insumo, ReporteHoyOut, ReporteMensualOut, VentaPorDia } from './types'
+import type { ContabilidadOut, Insumo, ReporteHoyOut, ReporteMensualOut, VentaPorDia } from './types'
 
 export function getReporteHoy(): Promise<ReporteHoyOut> {
   return apiClient.get<ReporteHoyOut>('/reportes/hoy')
@@ -24,4 +24,12 @@ export function getReporteDiario(params: ReporteDiarioParams = {}): Promise<Vent
   if (params.hasta) query.set('hasta', params.hasta)
   const qs = query.toString()
   return apiClient.get<VentaPorDia[]>(`/reportes/diario${qs ? `?${qs}` : ''}`)
+}
+
+export function getContabilidad(params: ReporteDiarioParams = {}): Promise<ContabilidadOut> {
+  const query = new URLSearchParams()
+  if (params.desde) query.set('desde', params.desde)
+  if (params.hasta) query.set('hasta', params.hasta)
+  const qs = query.toString()
+  return apiClient.get<ContabilidadOut>(`/reportes/contabilidad${qs ? `?${qs}` : ''}`)
 }

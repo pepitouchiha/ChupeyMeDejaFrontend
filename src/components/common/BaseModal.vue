@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 
+withDefaults(defineProps<{ wide?: boolean }>(), { wide: false })
+
 const emit = defineEmits<{ close: [] }>()
 
 function onOverlayClick() {
@@ -25,7 +27,7 @@ onUnmounted(() => {
 <template>
   <Teleport to="body">
     <div class="modal-overlay" @click.self="onOverlayClick">
-      <div class="modal-card" role="dialog" aria-modal="true">
+      <div class="modal-card" :class="{ 'modal-card--wide': wide }" role="dialog" aria-modal="true">
         <slot />
       </div>
     </div>
@@ -53,5 +55,24 @@ onUnmounted(() => {
   background: var(--color-surface);
   border: 1px solid var(--color-border-soft);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-card--wide {
+  width: min(720px, 94vw);
+}
+
+/* Celular: el modal sube desde abajo y ocupa el ancho completo. */
+@media (max-width: 600px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card,
+  .modal-card--wide {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 16px calc(20px + env(safe-area-inset-bottom));
+  }
 }
 </style>

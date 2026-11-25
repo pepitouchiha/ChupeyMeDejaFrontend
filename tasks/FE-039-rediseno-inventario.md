@@ -2,7 +2,7 @@
 id: FE-039
 title: Repensar la pantalla de Inventario
 area: frontend
-status: backlog
+status: done               # reemplazada por BE-030, BE-031, FE-043 y FE-044
 priority: low
 depends_on: [FE-005]
 created_by: user

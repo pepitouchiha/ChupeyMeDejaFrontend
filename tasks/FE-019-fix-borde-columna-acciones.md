@@ -116,7 +116,7 @@ Archivos tocados:
 
 Cómo probarlo:
 1. `npm run dev` (ya corriendo en `http://localhost:5173`).
-2. Login con `admin@brainfreeze.com` / `Admin1234`.
+2. Login con `admin@chupeymedeja.com` / `Admin1234`.
 3. Ir a Productos e Inventario, inspeccionar con zoom/DevTools el
    `border-bottom` de cada fila: ahora es continuo bajo toda la fila,
    incluida la columna de acciones, igual que el resto de columnas.

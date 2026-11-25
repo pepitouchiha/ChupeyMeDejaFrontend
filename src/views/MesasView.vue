@@ -3,10 +3,13 @@ import { onMounted, ref } from 'vue'
 import { useMesas } from '../composables/useMesas'
 import { useVentas } from '../composables/useVentas'
 import { useToast } from '../composables/useToast'
+import { useCaja } from '../composables/useCaja'
+import { useAuth } from '../composables/useAuth'
 import { listVentas } from '../api/ventas'
 import { ApiError } from '../api/client'
 import BaseModal from '../components/common/BaseModal.vue'
 import ConfirmModal from '../components/common/ConfirmModal.vue'
+import CajaCerradaAviso from '../components/common/CajaCerradaAviso.vue'
 import IconPencil from '../components/icons/IconPencil.vue'
 import IconTrash from '../components/icons/IconTrash.vue'
 import PedidoEnCursoModal from '../components/PedidoEnCursoModal.vue'
@@ -15,6 +18,8 @@ import type { Mesa, Venta } from '../api/types'
 const { mesas, isLoading, loadError, load, create, liberar, update, remove, messageFor } = useMesas()
 const { abrirPedido } = useVentas()
 const { push: pushToast } = useToast()
+const { cerrada: cajaCerrada, cargarActual: cargarCaja } = useCaja()
+const { esAdmin } = useAuth()
 
 const isFormOpen = ref(false)
 const editingId = ref<number | null>(null)
@@ -53,6 +58,7 @@ async function refreshMesasConPedidoAbierto() {
 onMounted(() => {
   load()
   refreshMesasConPedidoAbierto()
+  void cargarCaja()
 })
 
 function openCreateForm() {
@@ -154,6 +160,7 @@ async function onAbrirMesa(mesa: Mesa) {
   delete ocupadaSinPedidoFor.value[mesa.id]
 
   if (mesa.estado === 'libre') {
+    if (cajaCerrada.value) return
     abriendoId.value = mesa.id
     try {
       const nuevaVenta = await abrirPedido({ mesa_id: mesa.id })
@@ -207,8 +214,10 @@ function onCerrarPanel() {
   <section class="view">
     <header class="view-header">
       <h1>Mesas</h1>
-      <button type="button" class="btn-primary" @click="openCreateForm">+ Nueva mesa</button>
+      <button v-if="esAdmin" type="button" class="btn-primary" @click="openCreateForm">+ Nueva mesa</button>
     </header>
+
+    <CajaCerradaAviso v-if="cajaCerrada" />
 
     <BaseModal v-if="isFormOpen" @close="closeForm">
       <form class="mesa-form" @submit.prevent="onSubmit">
@@ -253,7 +262,8 @@ function onCerrarPanel() {
           <button
             type="button"
             class="btn-secondary"
-            :disabled="abriendoId === mesa.id"
+            :disabled="abriendoId === mesa.id || (mesa.estado === 'libre' && cajaCerrada)"
+            :title="mesa.estado === 'libre' && cajaCerrada ? 'Abre la caja para poder abrir una mesa' : undefined"
             @click="onAbrirMesa(mesa)"
           >
             {{ abriendoId === mesa.id ? 'Abriendo…' : mesa.estado === 'libre' ? 'Abrir mesa' : 'Ver pedido' }}
@@ -269,7 +279,7 @@ function onCerrarPanel() {
           </button>
         </div>
 
-        <div class="mesa-icon-actions">
+        <div v-if="esAdmin" class="mesa-icon-actions">
           <button
             type="button"
             class="btn-link"

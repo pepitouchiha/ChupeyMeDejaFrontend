@@ -61,3 +61,26 @@ export function formatDiaLargo(fecha: string): string {
     year: 'numeric',
   })
 }
+
+/** Solo la fecha de un instante de la API en hora del negocio, ej. "05/09/2026". */
+export function formatFecha(iso: string): string {
+  const fecha = parseFechaApi(iso)
+  if (Number.isNaN(fecha.getTime())) return iso
+  return fecha.toLocaleDateString('es-CO', {
+    timeZone: ZONA_NEGOCIO,
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })
+}
+
+/** "YYYY-MM-DD" a "DD/MM/YYYY" sin pasar por zonas horarias. */
+export function formatDiaCorto(fecha: string): string {
+  const [anio, mes, dia] = fecha.split('-')
+  return anio && mes && dia ? `${dia}/${mes}/${anio}` : fecha
+}
+
+/** Primer día del mes actual en hora del negocio, "YYYY-MM-DD". */
+export function inicioMesNegocio(): string {
+  return `${hoyNegocio().slice(0, 7)}-01`
+}

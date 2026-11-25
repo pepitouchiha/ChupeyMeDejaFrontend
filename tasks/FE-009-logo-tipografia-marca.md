@@ -29,7 +29,7 @@ gradiente ni sigan usando un favicon genérico de plantilla.
   soportan) y documentar la decisión en Notas de implementación.
 - Reemplazar `frontend/public/favicon.svg` (hoy es un ícono morado genérico de
   plantilla sin relación con la marca) y el `<link rel="icon">` de
-  `frontend/index.html` para que apunten al logo real de BrainFreeze.
+  `frontend/index.html` para que apunten al logo real de Chupe y Me Deja.
 - Agregar una clase CSS utilitaria reutilizable (ej. `.brand-gradient-text`)
   en `frontend/src/assets/styles/tokens.css` o `base.css`, que encapsule el
   degradado de texto ya usado en `LoginView.vue` (`.brand`: `background:
@@ -38,19 +38,19 @@ gradiente ni sigan usando un favicon genérico de plantilla.
   color: transparent;`), para no repetir esas líneas en cada componente que
   muestre el nombre de la marca.
 - `LoginView.vue`: agregar el logo (imagen circular, ~64-72px) centrado sobre
-  el título "BRAINFREEZEE"; refactorizar `.brand` para usar la nueva clase
+  el título "CHUPE Y ME DEJA"; refactorizar `.brand` para usar la nueva clase
   utilitaria en vez de declarar el gradiente inline.
-- `AppSidebar.vue`: reemplazar el texto plano `.brand` (hoy "BrainFreeze" en
+- `AppSidebar.vue`: reemplazar el texto plano `.brand` (hoy "Chupe y Me Deja" en
   `--color-cyan` sólido) por: el ícono del logo (~28-32px) + el texto
-  "BRAINFREEZEE" en negrita, usando la misma clase utilitaria de degradado.
+  "CHUPE Y ME DEJA" en negrita, usando la misma clase utilitaria de degradado.
 - No incluye: iconos de navegación, colores de resaltado por sección, ni el
   pie de sesión con avatar de usuario — eso es FE-010.
 
 ## Criterios de aceptación
 
 - [ ] El favicon servido en `/` ya no es el ícono morado genérico de
-      plantilla; corresponde al logo de BrainFreeze.
-- [ ] El logo se ve en la tarjeta de login, sobre el título "BRAINFREEZEE".
+      plantilla; corresponde al logo de Chupe y Me Deja.
+- [ ] El logo se ve en la tarjeta de login, sobre el título "CHUPE Y ME DEJA".
 - [ ] El logo se ve en el sidebar, junto al texto de marca.
 - [ ] Existe una clase CSS de degradado de texto de marca definida una sola
       vez (en `tokens.css` o `base.css`), y tanto `LoginView.vue` como
@@ -88,14 +88,14 @@ gradiente ni sigan usando un favicon genérico de plantilla.
   una vez porque requería tocar el mismo `onSubmit` de `LoginView.vue`.
 - `AppSidebar.vue`: `.brand` pasó de texto plano en `--color-cyan` a un
   contenedor flex con el logo (30x30, circular) + `<span class="brand-text
-  brand-gradient-text">BRAINFREEZEE</span>`.
+  brand-gradient-text">CHUPE Y ME DEJA</span>`.
 - Archivos tocados: `frontend/index.html`,
   `frontend/src/assets/styles/tokens.css`, `frontend/src/views/LoginView.vue`,
   `frontend/src/components/layout/AppSidebar.vue`,
   `frontend/src/composables/useAuth.ts` (nuevas `getUserEmail`/`setUserEmail`/
   `clearUserEmail`), más los dos JPEG copiados.
 - Cómo probarlo: `npm run dev` → abrir `http://localhost:5173/login`, ver el
-  logo circular sobre "BRAINFREEZEE" con degradado magenta→púrpura→cian;
+  logo circular sobre "CHUPE Y ME DEJA" con degradado magenta→púrpura→cian;
   iniciar sesión y ver el mismo logo + texto degradado en el sidebar; revisar
   la pestaña del navegador para confirmar el favicon del logo (ya no el
   ícono morado genérico).
@@ -117,7 +117,7 @@ Verificado contra código real (no solo las notas de implementación):
   la reutilizan — no hay `linear-gradient`/`background-clip` duplicado en
   ninguno de los dos.
 - `LoginView.vue`: `<img class="brand-logo">` de 72x72 circular, centrada
-  sobre el título "BRAINFREEZEE". `AppSidebar.vue`: mismo logo a 30x30 junto
+  sobre el título "CHUPE Y ME DEJA". `AppSidebar.vue`: mismo logo a 30x30 junto
   al texto de marca con degradado (ya no cian sólido).
 - `useAuth.ts` expone `getUserEmail`/`setUserEmail`/`clearUserEmail`
   correctamente respaldadas en `localStorage` bajo `bf_user_email`,

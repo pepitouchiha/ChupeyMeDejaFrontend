@@ -6,9 +6,11 @@ import { useCategorias } from '../composables/useCategorias'
 import { useMesas } from '../composables/useMesas'
 import { useCarrito } from '../composables/useCarrito'
 import { useVentas } from '../composables/useVentas'
-import { useToast } from '../composables/useToast'
+import { useImpresion } from '../composables/useImpresion'
+import { useCaja } from '../composables/useCaja'
 import ProductoThumbnail from '../components/common/ProductoThumbnail.vue'
 import ConfirmModal from '../components/common/ConfirmModal.vue'
+import CajaCerradaAviso from '../components/common/CajaCerradaAviso.vue'
 import IconBanknote from '../components/icons/IconBanknote.vue'
 import IconTransfer from '../components/icons/IconTransfer.vue'
 import { formatCOP } from '../utils/currency'
@@ -21,8 +23,21 @@ const { productos, isLoading: productosLoading, loadError: productosError, load:
 const { categorias, load: loadCategorias } = useCategorias()
 const { mesas, isLoading: mesasLoading, loadError: mesasError, load: loadMesas } = useMesas()
 const carrito = useCarrito()
+
+// Celular: contador por producto y barra inferior que lleva al carrito.
+const carritoPanel = ref<HTMLElement | null>(null)
+const cantidadArticulos = computed(() =>
+  carrito.lineas.value.reduce((total, linea) => total + linea.cantidad, 0),
+)
+function cantidadEnCarrito(productoId: number): number {
+  return carrito.lineas.value.find((l) => l.producto.id === productoId)?.cantidad ?? 0
+}
+function verCarrito() {
+  carritoPanel.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 const { create: crearVenta, messageFor } = useVentas()
-const { push: pushToast } = useToast()
+const { comandaAuto, facturaAutoOToast } = useImpresion()
+const { cerrada: cajaCerrada, cargarActual: cargarCaja } = useCaja()
 
 const search = ref('')
 const categoriaFiltro = ref<number | ''>('')
@@ -60,6 +75,7 @@ const resumenConfirmacion = computed(() => {
 })
 
 onMounted(async () => {
+  void cargarCaja()
   await Promise.all([loadCategorias(), loadMesas(), loadProductos()])
 
   const mesaIdQuery = route.query.mesaId
@@ -87,6 +103,7 @@ function resetVentaForm() {
 }
 
 function onConfirmarVenta() {
+  if (cajaCerrada.value) return
   if (carrito.lineas.value.length === 0) {
     saveError.value = 'Agrega al menos un producto al carrito.'
     return
@@ -111,7 +128,8 @@ async function confirmarVentaDefinitiva() {
     const venta: Venta = await crearVenta(payload)
 
     showConfirmVenta.value = false
-    pushToast('Venta confirmada exitosamente')
+    void comandaAuto(venta)
+    void facturaAutoOToast(venta, 'Venta confirmada exitosamente')
     resetVentaForm()
     if (venta.mesa_id !== null) {
       await loadMesas()
@@ -119,6 +137,7 @@ async function confirmarVentaDefinitiva() {
   } catch (err) {
     showConfirmVenta.value = false
     saveError.value = messageFor(err, 'No fue posible registrar la venta.')
+    void cargarCaja()
   } finally {
     isSaving.value = false
   }
@@ -130,6 +149,8 @@ async function confirmarVentaDefinitiva() {
     <header class="view-header">
       <h1>Ventas</h1>
     </header>
+
+    <CajaCerradaAviso v-if="cajaCerrada" />
 
     <div class="pos-layout">
       <div class="catalogo">
@@ -172,6 +193,13 @@ async function confirmarVentaDefinitiva() {
 
         <ul v-else class="producto-grid">
           <li v-for="producto in productosFiltrados" :key="producto.id" class="producto-card">
+            <span
+              v-if="cantidadEnCarrito(producto.id) > 0"
+              class="producto-badge"
+              :aria-label="`${cantidadEnCarrito(producto.id)} en la venta`"
+            >
+              {{ cantidadEnCarrito(producto.id) }}
+            </span>
             <ProductoThumbnail :src="producto.imagen_base64" :alt="producto.nombre" variant="card" />
             <div class="producto-info">
               <span class="producto-nombre">{{ producto.nombre }}</span>
@@ -190,7 +218,7 @@ async function confirmarVentaDefinitiva() {
         </ul>
       </div>
 
-      <div class="carrito-panel">
+      <div ref="carritoPanel" class="carrito-panel">
         <h2>Venta actual</h2>
 
         <div class="form-row">
@@ -269,12 +297,20 @@ async function confirmarVentaDefinitiva() {
         <button
           type="button"
           class="btn-primary btn-confirmar"
-          :disabled="isSaving || carrito.lineas.value.length === 0"
+          :disabled="isSaving || cajaCerrada || carrito.lineas.value.length === 0"
           @click="onConfirmarVenta"
         >
           {{ isSaving ? 'Registrando…' : 'Confirmar venta' }}
         </button>
       </div>
+    </div>
+
+    <div v-if="cantidadArticulos > 0" class="barra-venta">
+      <span class="barra-venta__resumen">
+        <strong>{{ formatCOP(carrito.total.value) }}</strong>
+        <span>{{ cantidadArticulos }} {{ cantidadArticulos === 1 ? 'producto' : 'productos' }}</span>
+      </span>
+      <button type="button" class="barra-venta__btn" @click="verCarrito">Ver venta</button>
     </div>
 
     <ConfirmModal
@@ -397,6 +433,7 @@ async function confirmarVentaDefinitiva() {
 }
 
 .producto-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -643,13 +680,165 @@ async function confirmarVentaDefinitiva() {
   padding: 12px 16px;
 }
 
+.producto-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b0410;
+  background: var(--color-lime);
+  box-shadow: 0 0 10px rgba(178, 255, 5, 0.5);
+}
+
+.barra-venta {
+  display: none;
+}
+
 @media (max-width: 860px) {
   .pos-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .catalogo,
+  .filters,
+  .categoria-chips {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .carrito-panel {
     position: static;
+    scroll-margin-top: 72px;
+  }
+
+  .view {
+    padding-bottom: 72px;
+  }
+
+  .filters {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .search-input {
+    min-width: 0;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  /* Categorías en una sola fila deslizable. */
+  .categoria-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    margin: 0 -2px;
+  }
+
+  .categoria-chip {
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 13px;
+  }
+
+  .producto-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .producto-card {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .producto-card :deep(.producto-thumb--card) {
+    aspect-ratio: 16 / 10;
+  }
+
+  .producto-nombre {
+    font-size: 13.5px;
+    line-height: 1.25;
+  }
+
+  .producto-categoria {
+    display: none;
+  }
+
+  .btn-agregar {
+    margin-top: auto;
+    min-height: 40px;
+  }
+
+  .btn-qty {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .carrito-lineas {
+    max-height: none;
+  }
+
+  .metodo-option {
+    min-height: 44px;
+  }
+
+  .btn-confirmar {
+    min-height: 50px;
+    font-size: 15px;
+  }
+
+  .barra-venta {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px max(14px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom))
+      max(14px, env(safe-area-inset-left));
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .barra-venta__resumen {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .barra-venta__resumen strong {
+    font-size: 18px;
+    color: var(--color-lime);
+  }
+
+  .barra-venta__resumen span {
+    font-size: 12px;
+    color: var(--color-text-muted);
+  }
+
+  .barra-venta__btn {
+    min-height: 46px;
+    padding: 0 22px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 15px;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(90deg, var(--color-purple), var(--color-purple-deep));
   }
 }
 </style>

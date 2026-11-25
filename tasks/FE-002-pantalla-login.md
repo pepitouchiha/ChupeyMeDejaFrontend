@@ -52,8 +52,8 @@ radiales magenta/cian sobre negro, card centrado con email/password).
   vieja no aplica a este endpoint).
 - `frontend/src/views/LoginView.vue`: reemplaza el placeholder por el
   formulario real (email/password), replicando el diseño del mockup
-  (`Brainfreezee Panel (offline).html`, confirmado con Grep acotado sobre el
-  bloque `showLogin`): card con gradiente de marca "BRAINFREEZEE", subtítulo,
+  (`ChupeyMeDeja Panel (offline).html`, confirmado con Grep acotado sobre el
+  bloque `showLogin`): card con gradiente de marca "CHUPE Y ME DEJA", subtítulo,
   inputs con foco cian, botón con gradiente morado. Usa tokens de
   `assets/styles/tokens.css` en vez de los hex del mockup directamente.
   - Validación básica: email/password requeridos antes de llamar a la API.
@@ -91,7 +91,7 @@ FE-001; se verificó que sigue funcionando igual.
 
 1. Backend: `cd backend && .\.venv\Scripts\python -m uvicorn app.main:app --port 8000`
    (crear usuario de prueba primero si no existe:
-   `.\.venv\Scripts\python -m app.scripts.crear_usuario admin@brainfreeze.com "MiPasswordSegura123"`).
+   `.\.venv\Scripts\python -m app.scripts.crear_usuario admin@chupeymedeja.com "MiPasswordSegura123"`).
 2. Frontend: `cd frontend && npm run dev`, abrir `http://localhost:5173`
    (redirige a `/login`).
 3. Probar con credenciales incorrectas → mensaje "Correo o contraseña

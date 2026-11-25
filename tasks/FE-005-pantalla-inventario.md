@@ -155,7 +155,7 @@ Verificado en este entorno:
   reviewer haga clic-a-clic en `/inventario` con el backend real levantado,
   en particular el flujo de ajuste de stock (entrada/salida) y el caso de
   error 400 al intentar dejar el stock negativo. Se limpiaron
-  `brainfreeze.db`, procesos de `uvicorn`/`vite` de prueba y `dist/` al
+  `chupeymedeja.db`, procesos de `uvicorn`/`vite` de prueba y `dist/` al
   terminar.
 
 ## Revisión

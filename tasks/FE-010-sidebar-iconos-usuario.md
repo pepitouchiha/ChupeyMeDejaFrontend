@@ -108,7 +108,7 @@ texto suelto "Cerrar sesión" que hay actualmente.
 - Archivos tocados: `frontend/src/components/layout/AppSidebar.vue`,
   `frontend/src/assets/styles/tokens.css` (nueva `.brand-gradient-bg`).
 - Cómo probarlo: `npm run dev`, iniciar sesión con
-  `admin@brainfreeze.com` / `Admin1234`, y navegar entre Dashboard (acento
+  `admin@chupeymedeja.com` / `Admin1234`, y navegar entre Dashboard (acento
   cyan) e Inventario (acento lima) para confirmar visualmente el cambio de
   color; verificar el pie del sidebar con avatar "A" + email + botón
   "Cerrar sesión" separado, y confirmar que cerrar sesión redirige a

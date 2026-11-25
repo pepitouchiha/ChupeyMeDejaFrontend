@@ -166,7 +166,7 @@ payload que arma el formulario:
 `npx vue-tsc -b` y `npm run build` corren sin errores. Backend (`uvicorn`) y
 frontend (`npm run dev`) detenidos y la SQLite temporal del scratchpad
 eliminada al finalizar la verificación de las 3 tareas (FE-028/FE-029/
-FE-030); no se tocó `backend/brainfreeze.db` (ignorado por git, confirmado
+FE-030); no se tocó `backend/chupeymedeja.db` (ignorado por git, confirmado
 con `git check-ignore`) ni ningún archivo bajo `backend/` fuera de leer el
 código fuente para confirmar los contratos.
 

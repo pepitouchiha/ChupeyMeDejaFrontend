@@ -138,7 +138,7 @@ frontend, y no lo até a esta tarea para no exceder su alcance (que es exclusiva
 
 **Cómo probarlo manualmente:**
 1. `npm run dev` (o usar `localhost:5173` ya corriendo), iniciar sesión con
-   `admin@brainfreeze.com` / `Admin1234`.
+   `admin@chupeymedeja.com` / `Admin1234`.
 2. Ir a Productos → "+ Nuevo producto", seleccionar una imagen (`accept="image/*"`):
    - Con un archivo > 500KB: debe aparecer el error inline y el archivo no debe leerse
      (verificar que no aparece preview).

@@ -93,7 +93,7 @@ Verificación realizada en esta sesión:
   `ContabilidadView` sin warnings de tipos.
 - Backend real levantado (`backend/.venv/Scripts/python.exe -m uvicorn
   app.main:app --port 8000`) con la base de datos existente
-  (`backend/brainfreeze.db`, con datos de prueba ya cargados de la sesión de
+  (`backend/chupeymedeja.db`, con datos de prueba ya cargados de la sesión de
   verificación de BE-007) + usuario nuevo creado vía
   `python -m app.scripts.crear_usuario menesesuchiha@gmail.com "TestFE008Pass!"`.
   Login vía `POST /auth/login` y llamadas autenticadas confirmaron los
@@ -139,8 +139,8 @@ Revisión hecha leyendo `frontend/src/views/DashboardView.vue`,
 `backend/app/routers/reportes.py` y `backend/app/schemas/reporte.py`, y verificando en vivo:
 
 - Backend real levantado (`backend/.venv/Scripts/python.exe -m uvicorn app.main:app --port 8010`)
-  contra `backend/brainfreeze.db` (datos de prueba preexistentes de la sesión de BE-007), usuario
-  nuevo (`reviewfe008@brainfreeze.com`) creado vía `crear_usuario.py`, login por `POST /auth/login`
+  contra `backend/chupeymedeja.db` (datos de prueba preexistentes de la sesión de BE-007), usuario
+  nuevo (`reviewfe008@chupeymedeja.com`) creado vía `crear_usuario.py`, login por `POST /auth/login`
   y llamadas autenticadas con curl:
   - `GET /reportes/hoy` → `total: 72000`, `num_ventas: 3`, bucket de la hora 6 con esos valores y
     el resto de las 24 horas en 0. Coincide con lo documentado.

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useAuth } from '../composables/useAuth'
 import { onMounted, reactive, ref } from 'vue'
 import { useVentas } from '../composables/useVentas'
 import { useMesas } from '../composables/useMesas'
@@ -12,6 +13,8 @@ import IconTransfer from '../components/icons/IconTransfer.vue'
 import IconEye from '../components/icons/IconEye.vue'
 import IconPencil from '../components/icons/IconPencil.vue'
 import IconBan from '../components/icons/IconBan.vue'
+import IconPrinter from '../components/icons/IconPrinter.vue'
+import { useImpresion } from '../composables/useImpresion'
 import { formatCOP } from '../utils/currency'
 import { formatFechaHora } from '../utils/fecha'
 import type { EstadoVenta, MetodoPago, Producto, Venta, VentaUpdate } from '../api/types'
@@ -29,6 +32,7 @@ const {
 const { mesas, load: loadMesas } = useMesas()
 const { productos, load: loadProductos } = useProductos()
 const { push: pushToast } = useToast()
+const { imprimirFactura } = useImpresion()
 
 const desde = ref('')
 const hasta = ref('')
@@ -136,6 +140,7 @@ function productoParaItem(productoId: number, precioUnitario: number): Producto 
     tamano: null,
     imagen_base64: null,
     creado_en: '',
+    insumos: [],
   }
 }
 
@@ -208,6 +213,9 @@ async function onGuardarEdicion() {
     isSavingEdit.value = false
   }
 }
+
+// Editar y cancelar órdenes cobradas es solo para dueño/administrador.
+const { esAdmin } = useAuth()
 </script>
 
 <template>
@@ -248,7 +256,7 @@ async function onGuardarEdicion() {
     <p v-else-if="ventasError" class="error" role="alert">{{ ventasError }}</p>
     <p v-else-if="ventas.length === 0" class="status">No se encontraron órdenes con estos filtros.</p>
 
-    <table v-else class="ordenes-table">
+    <table v-else class="ordenes-table tabla-tarjetas">
       <thead>
         <tr>
           <th>ID</th>
@@ -266,18 +274,18 @@ async function onGuardarEdicion() {
             class="orden-row"
             :class="{ 'orden-row--cancelada': orden.estado === 'cancelada' }"
           >
-            <td>#{{ orden.id }}</td>
-            <td>{{ formatFechaHora(orden.creado_en) }}</td>
-            <td>{{ mesaNombre(orden.mesa_id) }}</td>
-            <td>
+            <td class="celda-titulo">#{{ orden.id }}</td>
+            <td data-label="Fecha">{{ formatFechaHora(orden.creado_en) }}</td>
+            <td data-label="Mesa">{{ mesaNombre(orden.mesa_id) }}</td>
+            <td data-label="Pago">
               <span class="tag" :class="`tag--${orden.metodo_pago}`">
                 <IconBanknote v-if="orden.metodo_pago === 'efectivo'" />
                 <IconTransfer v-else />
                 {{ orden.metodo_pago === 'efectivo' ? 'Efectivo' : 'Transferencia' }}
               </span>
             </td>
-            <td>{{ formatCOP(orden.total) }}</td>
-            <td>
+            <td data-label="Total">{{ formatCOP(orden.total) }}</td>
+            <td data-label="Estado">
               <span class="tag" :class="`tag--${orden.estado}`">
                 {{ orden.estado === 'activa' ? 'Activa' : orden.estado === 'cancelada' ? 'Cancelada' : 'Abierta' }}
               </span>
@@ -296,6 +304,16 @@ async function onGuardarEdicion() {
                 v-if="orden.estado === 'activa'"
                 type="button"
                 class="btn-link"
+                :aria-label="`Imprimir factura de la orden #${orden.id}`"
+                :title="`Imprimir factura de la orden #${orden.id}`"
+                @click="imprimirFactura(orden)"
+              >
+                <IconPrinter />
+              </button>
+              <button
+                v-if="orden.estado === 'activa' && esAdmin"
+                type="button"
+                class="btn-link"
                 :disabled="openingEditId === orden.id"
                 :aria-busy="openingEditId === orden.id"
                 :aria-label="openingEditId === orden.id ? 'Cargando orden…' : 'Editar orden'"
@@ -305,7 +323,7 @@ async function onGuardarEdicion() {
                 <IconPencil />
               </button>
               <button
-                v-if="orden.estado === 'activa'"
+                v-if="orden.estado === 'activa' && esAdmin"
                 type="button"
                 class="btn-link btn-link--danger"
                 :disabled="cancelingId === orden.id"
@@ -370,13 +388,21 @@ async function onGuardarEdicion() {
             v-if="ordenSeleccionada.estado === 'activa'"
             type="button"
             class="btn-secondary"
+            @click="imprimirFactura(ordenSeleccionada)"
+          >
+            Imprimir factura
+          </button>
+          <button
+            v-if="ordenSeleccionada.estado === 'activa' && esAdmin"
+            type="button"
+            class="btn-secondary"
             :disabled="openingEditId === ordenSeleccionada.id"
             @click="abrirEdicion(ordenSeleccionada)"
           >
             {{ openingEditId === ordenSeleccionada.id ? 'Cargando…' : 'Editar orden' }}
           </button>
           <button
-            v-if="ordenSeleccionada.estado === 'activa'"
+            v-if="ordenSeleccionada.estado === 'activa' && esAdmin"
             type="button"
             class="btn-danger-outline"
             :disabled="cancelingId === ordenSeleccionada.id"

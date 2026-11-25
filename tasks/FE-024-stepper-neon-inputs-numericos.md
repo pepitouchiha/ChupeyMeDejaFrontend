@@ -284,7 +284,7 @@ usar `1`" que ya pide la tarea).
 
 **Cómo probarlo manualmente:**
 1. `npm run dev` (ya corriendo en `http://localhost:5173`), iniciar sesión
-   con `admin@brainfreeze.com` / `Admin1234`.
+   con `admin@chupeymedeja.com` / `Admin1234`.
 2. Ir a **Productos** → "+ Nuevo producto": el campo "Precio (COP)" ya no
    muestra las flechas nativas del navegador; a la derecha aparecen dos
    botones cian (↑/↓). Con el campo vacío, click en ↑ pone `1` (su `min`);

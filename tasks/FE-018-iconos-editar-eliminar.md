@@ -151,7 +151,7 @@ Archivos tocados:
 
 Cómo probarlo:
 1. `npm run dev` (ya corriendo en `http://localhost:5173`).
-2. Login con `admin@brainfreeze.com` / `Admin1234`.
+2. Login con `admin@chupeymedeja.com` / `Admin1234`.
 3. Ir a Productos, Inventario y Categorías: los botones Editar/Eliminar
    muestran icono de lápiz/basurita (cian/rojo) en vez de texto. Pasar el
    mouse encima muestra el `title` nativo; inspeccionar el DOM/AT (o

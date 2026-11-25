@@ -175,7 +175,7 @@ backend real en `http://localhost:8000`):
    su historial." inline en la tarjeta, y la mesa permanece en la lista.
 
 Verificación real ejecutada contra el backend real (no solo lectura de
-código): creé un usuario QA dedicado (`qa-fe037@brainfreeze.com`, vía
+código): creé un usuario QA dedicado (`qa-fe037@chupeymedeja.com`, vía
 `python -m app.scripts.crear_usuario`, sin tocar contraseñas existentes), dos
 mesas de prueba y una venta asociada a una de ellas, y repliqué exactamente
 las llamadas que hace el frontend (`PUT /mesas/{id}`, `DELETE /mesas/{id}`)
@@ -190,7 +190,7 @@ con `curl` autenticado:
 - `PUT`/`DELETE` sobre un id inexistente → `404` con `detail: "Mesa no
   encontrada"` (cubre la rama de error genérico vía `messageFor`).
 Al terminar, limpié toda la data de prueba (venta, items, mesas y el usuario
-QA) directamente en `brainfreeze.db` para no dejar residuos en la base de
+QA) directamente en `chupeymedeja.db` para no dejar residuos en la base de
 datos de desarrollo compartida.
 
 `npx vue-tsc -b` y `npm run build` corren sin errores.
@@ -212,7 +212,7 @@ coincide exactamente con lo documentado). `npx vue-tsc -b` y `npm run build`
 pasan sin errores.
 
 Reproduje end-to-end contra el backend real (usuario QA propio
-`qa-review-fe037@brainfreeze.com`, eliminado al terminar):
+`qa-review-fe037@chupeymedeja.com`, eliminado al terminar):
 - `PUT /mesas/{id}` renombra y el nuevo nombre aparece en `GET /mesas`
   inmediatamente (código: `update()` en `useMesas.ts` reemplaza el elemento en
   memoria, sin `load()`).
@@ -234,6 +234,6 @@ Reproduje end-to-end contra el backend real (usuario QA propio
 
 Datos de prueba (mesas de prueba, venta abierta sin items vía `descartar`, y
 el usuario QA) limpiados al terminar; no quedan residuos en
-`brainfreeze.db`.
+`chupeymedeja.db`.
 
 Sin hallazgos. Cumple los criterios de aceptación tal cual están escritos.

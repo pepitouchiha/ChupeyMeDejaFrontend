@@ -14,7 +14,7 @@ El usuario pidió que el filtro de categorías del catálogo/POS en
 `frontend/src/views/VentasView.vue` sea "más fiel al diseño propuesto en las
 interfaces anteriormente": hoy es un `<select>` nativo; debe verse como una fila
 de rectangulitos redondeados (chips/pills), consistente con el mockup original
-del proyecto (`D:\.NET\BrainFreeze\Brainfreezee Panel (offline).html`), donde el
+del proyecto (`D:\.NET\Chupe y Me Deja\ChupeyMeDeja Panel (offline).html`), donde el
 filtro de categorías (`catFilters`) se dibuja como una serie de `<span>` tipo tag
 (`padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:500`), con
 la categoría activa en un tono distinto (morado, `rgba(123,44,191,...)` con texto

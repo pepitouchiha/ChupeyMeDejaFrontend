@@ -2,14 +2,21 @@ import { reactive } from 'vue'
 
 export type ToastType = 'success' | 'error'
 
+export interface ToastAction {
+  label: string
+  handler: () => void
+}
+
 export interface Toast {
   id: number
   message: string
   type: ToastType
+  action?: ToastAction
 }
 
 const toasts = reactive<Toast[]>([])
 const DURATION_MS = 3500
+const DURATION_WITH_ACTION_MS = 10000
 
 let nextId = 1
 
@@ -20,10 +27,10 @@ function dismiss(id: number): void {
   }
 }
 
-function push(message: string, type: ToastType = 'success'): number {
+function push(message: string, type: ToastType = 'success', action?: ToastAction): number {
   const id = nextId++
-  toasts.push({ id, message, type })
-  setTimeout(() => dismiss(id), DURATION_MS)
+  toasts.push({ id, message, type, action })
+  setTimeout(() => dismiss(id), action ? DURATION_WITH_ACTION_MS : DURATION_MS)
   return id
 }
 

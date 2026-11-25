@@ -17,6 +17,14 @@ const { toasts, dismiss } = useToast()
         >
           <span class="toast-message">{{ toast.message }}</span>
           <button
+            v-if="toast.action"
+            type="button"
+            class="toast-action"
+            @click="toast.action.handler(); dismiss(toast.id)"
+          >
+            {{ toast.action.label }}
+          </button>
+          <button
             type="button"
             class="toast-close"
             aria-label="Cerrar notificación"
@@ -63,6 +71,23 @@ const { toasts, dismiss } = useToast()
   font-size: 13.5px;
   line-height: 1.4;
   color: var(--color-text);
+}
+
+.toast-action {
+  border: 1px solid var(--color-cyan);
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--color-cyan);
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  transition: background-color 0.15s ease;
+}
+
+.toast-action:hover {
+  background: rgba(0, 229, 255, 0.2);
 }
 
 .toast-close {

@@ -4,8 +4,12 @@ import { useCategorias } from '../composables/useCategorias'
 import { useProductos } from '../composables/useProductos'
 import { useVentas } from '../composables/useVentas'
 import { useToast } from '../composables/useToast'
+import { useImpresion } from '../composables/useImpresion'
+import { useComandaPendiente } from '../composables/useComandaPendiente'
+import { useCaja } from '../composables/useCaja'
 import BaseModal from './common/BaseModal.vue'
 import ConfirmModal from './common/ConfirmModal.vue'
+import CajaCerradaAviso from './common/CajaCerradaAviso.vue'
 import ProductoThumbnail from './common/ProductoThumbnail.vue'
 import IconTrash from './icons/IconTrash.vue'
 import IconBanknote from './icons/IconBanknote.vue'
@@ -27,6 +31,10 @@ const { agregarItems, quitarItem, cambiarCantidadItem, cerrarPedido, descartarPe
 const { productos, load: loadProductos } = useProductos()
 const { categorias, load: loadCategorias } = useCategorias()
 const { push: pushToast } = useToast()
+const { comandaAutoActiva, imprimirComanda, imprimirFactura, facturaAutoOToast } = useImpresion()
+const pendiente = useComandaPendiente(props.venta.id)
+const isEnviandoComanda = ref(false)
+const { cerrada: cajaCerrada, cargarActual: cargarCaja } = useCaja()
 
 const ventaActual = ref<Venta>(props.venta)
 
@@ -50,6 +58,7 @@ const isDescartando = ref(false)
 const descartarError = ref('')
 
 onMounted(() => {
+  void cargarCaja()
   loadProductos()
   loadCategorias()
 })
@@ -87,6 +96,7 @@ async function onAgregarProducto(producto: Producto) {
     ventaActual.value = await agregarItems(ventaActual.value.id, {
       items: [{ producto_id: producto.id, cantidad: 1 }],
     })
+    pendiente.registrarCambio(producto.id, producto.nombre, 1)
   } catch (err) {
     addError.value = messageFor(err, 'No fue posible agregar el producto.')
   } finally {
@@ -98,7 +108,9 @@ async function onQuitarItem(itemId: number) {
   itemError.value = ''
   busyItemId.value = itemId
   try {
+    const item = ventaActual.value.items.find((i) => i.id === itemId)
     ventaActual.value = await quitarItem(ventaActual.value.id, itemId)
+    if (item) pendiente.registrarCambio(item.producto_id, item.nombre_producto, -item.cantidad)
   } catch (err) {
     itemError.value = messageFor(err, 'No fue posible quitar el producto.')
   } finally {
@@ -119,6 +131,7 @@ async function onCambiarCantidad(item: VentaItem, delta: number) {
     ventaActual.value = await cambiarCantidadItem(ventaActual.value.id, item.id, {
       cantidad: nuevaCantidad,
     })
+    pendiente.registrarCambio(item.producto_id, item.nombre_producto, delta)
   } catch (err) {
     itemError.value = messageFor(err, 'No fue posible cambiar la cantidad.')
   } finally {
@@ -126,12 +139,42 @@ async function onCambiarCantidad(item: VentaItem, delta: number) {
   }
 }
 
-function onCerrarPanel() {
+async function enviarComandaPendiente(): Promise<void> {
+  if (isEnviandoComanda.value) return
+  const items = pendiente.items.value.map((i) => ({ ...i }))
+  if (items.length === 0) return
+  const adicional = pendiente.comandaEnviada.value
+  isEnviandoComanda.value = true
+  try {
+    const impresa = await imprimirComanda(ventaActual.value, { items, adicional })
+    if (impresa) pendiente.marcarEnviada(items)
+  } finally {
+    isEnviandoComanda.value = false
+  }
+}
+
+async function onEnviarComanda() {
+  await enviarComandaPendiente()
+}
+
+async function onCerrarPanel() {
+  if (pendiente.cantidadPendiente.value > 0) {
+    const cantidad = pendiente.cantidadPendiente.value
+    const auto = await comandaAutoActiva()
+    if (auto) {
+      void enviarComandaPendiente()
+    } else {
+      pushToast(
+        `Quedaron ${cantidad} producto${cantidad === 1 ? '' : 's'} sin enviar a preparación. Ábrelo de nuevo para enviar la comanda.`,
+        'error',
+      )
+    }
+  }
   emit('close')
 }
 
 function onIniciarCobro() {
-  if (!puedeCobrar.value) return
+  if (!puedeCobrar.value || cajaCerrada.value) return
   cobroError.value = ''
   showConfirmCobro.value = true
 }
@@ -144,12 +187,17 @@ async function confirmarCobro() {
   isCobrando.value = true
   cobroError.value = ''
   try {
-    await cerrarPedido(ventaActual.value.id, { metodo_pago: metodoPagoCobro.value })
+    const ventaCobrada = await cerrarPedido(ventaActual.value.id, { metodo_pago: metodoPagoCobro.value })
     showConfirmCobro.value = false
-    pushToast('Mesa cobrada y cerrada')
+    if (pendiente.cantidadPendiente.value > 0 && (await comandaAutoActiva())) {
+      void enviarComandaPendiente()
+    }
+    pendiente.limpiar()
+    void facturaAutoOToast(ventaCobrada, 'Mesa cobrada y cerrada')
     emit('settled')
   } catch (err) {
     cobroError.value = messageFor(err, 'No fue posible cobrar el pedido.')
+    void cargarCaja()
   } finally {
     isCobrando.value = false
   }
@@ -169,6 +217,7 @@ async function confirmarDescartar() {
   descartarError.value = ''
   try {
     await descartarPedido(ventaActual.value.id)
+    pendiente.limpiar()
     showConfirmDescartar.value = false
     pushToast('Pedido descartado')
     emit('settled')
@@ -328,9 +377,28 @@ async function confirmarDescartar() {
           </div>
         </div>
 
-        <p v-if="!puedeCobrar" class="status">
+        <CajaCerradaAviso v-if="cajaCerrada" />
+        <p v-else-if="!puedeCobrar" class="status">
           Agrega al menos un producto antes de cobrar.
         </p>
+
+        <div class="comanda-pendiente" :class="{ 'comanda-pendiente--activa': pendiente.cantidadPendiente.value > 0 }">
+          <span class="comanda-pendiente-texto">
+            <template v-if="pendiente.cantidadPendiente.value > 0">
+              {{ pendiente.cantidadPendiente.value }}
+              producto{{ pendiente.cantidadPendiente.value === 1 ? '' : 's' }} sin enviar a preparación
+            </template>
+            <template v-else>Todo enviado a preparación</template>
+          </span>
+          <button
+            type="button"
+            class="btn-primary"
+            :disabled="pendiente.cantidadPendiente.value === 0 || isEnviandoComanda"
+            @click="onEnviarComanda"
+          >
+            {{ isEnviandoComanda ? 'Enviando…' : 'Enviar comanda' }}
+          </button>
+        </div>
 
         <div class="pedido-actions">
           <button type="button" class="btn-danger-outline" :disabled="isDescartando" @click="onIniciarDescartar">
@@ -339,7 +407,7 @@ async function confirmarDescartar() {
           <button
             type="button"
             class="btn-primary"
-            :disabled="!puedeCobrar || isCobrando"
+            :disabled="!puedeCobrar || cajaCerrada || isCobrando"
             @click="onIniciarCobro"
           >
             Cobrar / Cerrar mesa
@@ -347,6 +415,22 @@ async function confirmarDescartar() {
         </div>
 
         <div class="pedido-actions pedido-actions--secondary">
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="!puedeCobrar"
+            @click="imprimirComanda(ventaActual)"
+          >
+            Reimprimir comanda
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            :disabled="!puedeCobrar"
+            @click="imprimirFactura(ventaActual)"
+          >
+            Imprimir cuenta
+          </button>
           <button type="button" class="btn-secondary" @click="onCerrarPanel">Cerrar panel</button>
         </div>
       </section>
@@ -382,6 +466,24 @@ async function confirmarDescartar() {
 </template>
 
 <style scoped>
+.comanda-pendiente {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.comanda-pendiente--activa {
+  border-color: var(--color-orange);
+  background: rgba(255, 138, 30, 0.08);
+  color: var(--color-text);
+}
+
 .pedido-panel {
   display: flex;
   flex-direction: column;

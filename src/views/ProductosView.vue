@@ -2,22 +2,25 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useProductos } from '../composables/useProductos'
 import { useCategorias } from '../composables/useCategorias'
+import { useInsumos } from '../composables/useInsumos'
 import { useToast } from '../composables/useToast'
 import BaseModal from '../components/common/BaseModal.vue'
 import ConfirmModal from '../components/common/ConfirmModal.vue'
 import ProductoThumbnail from '../components/common/ProductoThumbnail.vue'
 import ToggleSwitch from '../components/common/ToggleSwitch.vue'
 import NumberInput from '../components/common/NumberInput.vue'
+import IconPackage from '../components/icons/IconPackage.vue'
 import IconPencil from '../components/icons/IconPencil.vue'
 import IconTrash from '../components/icons/IconTrash.vue'
 import { formatCOP } from '../utils/currency'
-import type { EstadoProducto, Producto } from '../api/types'
+import type { EstadoProducto, Producto, ProductoInsumo } from '../api/types'
 import type { ListProductosParams } from '../api/productos'
 
 const MAX_IMAGEN_BYTES = 500 * 1024
 
-const { productos, total, isLoading, loadError, loadTotal, load, create, update, remove, messageFor } =
+const { productos, total, isLoading, loadError, loadTotal, load, create, update, setInsumos, remove, messageFor } =
   useProductos()
+const { insumos: insumosActivos, load: loadInsumos } = useInsumos()
 const { categorias, load: loadCategorias } = useCategorias()
 const { push: pushToast } = useToast()
 
@@ -55,6 +58,60 @@ const form = reactive({
   estado: 'disponible' as EstadoProducto,
   imagenBase64: null as string | null,
 })
+interface RecetaLinea {
+  key: number
+  insumo_id: number | ''
+  cantidad: number | ''
+}
+
+const receta = ref<RecetaLinea[]>([])
+const recetaPrevia = ref<ProductoInsumo[]>([])
+let nextLineaKey = 1
+
+function insumoInfo(id: number | ''): { nombre: string; unidad: string } | null {
+  if (id === '') return null
+  const activo = insumosActivos.value.find((i) => i.id === id)
+  if (activo) return { nombre: activo.nombre, unidad: activo.unidad }
+  const previo = recetaPrevia.value.find((i) => i.insumo_id === id)
+  return previo ? { nombre: previo.nombre, unidad: previo.unidad } : null
+}
+
+function opcionesParaLinea(linea: RecetaLinea): { id: number; nombre: string }[] {
+  const usados = new Set(
+    receta.value.filter((l) => l !== linea && l.insumo_id !== '').map((l) => l.insumo_id),
+  )
+  const opciones = insumosActivos.value
+    .filter((i) => i.activo && !usados.has(i.id))
+    .map((i) => ({ id: i.id, nombre: i.nombre }))
+  if (linea.insumo_id !== '' && !opciones.some((o) => o.id === linea.insumo_id)) {
+    const info = insumoInfo(linea.insumo_id)
+    opciones.push({ id: linea.insumo_id, nombre: `${info?.nombre ?? `Insumo #${linea.insumo_id}`} (inactivo)` })
+  }
+  return opciones
+}
+
+const hayInsumosDisponibles = computed(() => insumosActivos.value.some((i) => i.activo))
+const puedeAgregarInsumo = computed(
+  () => insumosActivos.value.filter((i) => i.activo).length > receta.value.length,
+)
+
+function agregarLinea() {
+  receta.value.push({ key: nextLineaKey++, insumo_id: '', cantidad: 1 })
+}
+
+function quitarLinea(linea: RecetaLinea) {
+  receta.value = receta.value.filter((l) => l !== linea)
+}
+
+function cargarReceta(insumos: ProductoInsumo[]) {
+  recetaPrevia.value = insumos
+  receta.value = insumos.map((i) => ({ key: nextLineaKey++, insumo_id: i.insumo_id, cantidad: i.cantidad }))
+}
+
+function resumenInsumos(producto: Producto): string {
+  return producto.insumos.map((i) => `${i.cantidad} × ${i.nombre}`).join('\n')
+}
+
 const imagenTouched = ref(false)
 const imagenFileName = ref('')
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -80,6 +137,7 @@ const pendingDelete = ref<Producto | null>(null)
 
 onMounted(() => {
   loadCategorias()
+  loadInsumos()
   loadTotal()
   refresh()
 })
@@ -104,6 +162,8 @@ function openCreateForm() {
   imagenTouched.value = false
   imagenFileName.value = ''
   if (fileInputRef.value) fileInputRef.value.value = ''
+  cargarReceta([])
+  loadInsumos()
   formError.value = ''
   isFormOpen.value = true
 }
@@ -119,6 +179,8 @@ function openEditForm(producto: Producto) {
   imagenTouched.value = false
   imagenFileName.value = ''
   if (fileInputRef.value) fileInputRef.value.value = ''
+  cargarReceta(producto.insumos)
+  loadInsumos()
   formError.value = ''
   isFormOpen.value = true
 }
@@ -174,6 +236,22 @@ async function onSubmit() {
     formError.value = 'El costo no puede ser negativo.'
     return
   }
+  const vistos = new Set<number>()
+  for (const linea of receta.value) {
+    if (linea.insumo_id === '') {
+      formError.value = 'Selecciona un insumo en cada fila de "Descuenta del inventario" o quita la fila.'
+      return
+    }
+    if (linea.cantidad === '' || Number(linea.cantidad) <= 0) {
+      formError.value = 'La cantidad de cada insumo debe ser mayor a 0.'
+      return
+    }
+    if (vistos.has(linea.insumo_id)) {
+      formError.value = 'No puedes repetir un insumo en el producto.'
+      return
+    }
+    vistos.add(linea.insumo_id)
+  }
 
   isSaving.value = true
   formError.value = ''
@@ -186,13 +264,33 @@ async function onSubmit() {
       estado: form.estado,
       imagen_base64: imagenTouched.value ? form.imagenBase64 : undefined,
     }
+    const esNuevo = editingId.value === null
+    let productoId: number
     if (editingId.value === null) {
-      await create(payload)
-      pushToast('Producto creado')
+      productoId = (await create(payload)).id
+      editingId.value = productoId
     } else {
-      await update(editingId.value, payload)
-      pushToast('Producto actualizado')
+      productoId = editingId.value
+      await update(productoId, payload)
     }
+
+    try {
+      await setInsumos(
+        productoId,
+        receta.value.map((l) => ({ insumo_id: Number(l.insumo_id), cantidad: Number(l.cantidad) })),
+      )
+    } catch (err) {
+      const detalle = messageFor(err, 'Error desconocido.')
+      pushToast(
+        `${esNuevo ? 'Producto creado' : 'Producto actualizado'}, pero no se pudieron guardar los insumos: ${detalle}`,
+        'error',
+      )
+      formError.value = `No se pudieron guardar los insumos: ${detalle} Corrige e intenta guardar de nuevo.`
+      await Promise.all([refresh(), loadTotal()])
+      return
+    }
+
+    pushToast(esNuevo ? 'Producto creado' : 'Producto actualizado')
     closeForm()
     await Promise.all([refresh(), loadTotal()])
   } catch (err) {
@@ -329,6 +427,46 @@ async function onToggleEstado(producto: Producto, disponible: boolean) {
           </div>
         </div>
 
+        <fieldset class="receta" :disabled="isSaving">
+          <legend>Descuenta del inventario</legend>
+          <p v-if="receta.length === 0" class="receta-empty">
+            Este producto no descuenta insumos al venderse.
+          </p>
+          <div v-for="(linea, idx) in receta" :key="linea.key" class="receta-row">
+            <select
+              v-model="linea.insumo_id"
+              class="receta-select"
+              :aria-label="`Insumo ${idx + 1}`"
+            >
+              <option value="" disabled>Selecciona un insumo</option>
+              <option v-for="op in opcionesParaLinea(linea)" :key="op.id" :value="op.id">
+                {{ op.nombre }}
+              </option>
+            </select>
+            <div class="receta-cantidad">
+              <NumberInput v-model="linea.cantidad" :min="0" step="any" placeholder="Cant." />
+            </div>
+            <span class="receta-unidad">{{ insumoInfo(linea.insumo_id)?.unidad ?? '' }}</span>
+            <button
+              type="button"
+              class="btn-link btn-link--danger"
+              aria-label="Quitar insumo"
+              title="Quitar insumo"
+              @click="quitarLinea(linea)"
+            >
+              <IconTrash />
+            </button>
+          </div>
+          <div class="receta-footer">
+            <button type="button" class="btn-link" :disabled="!puedeAgregarInsumo" @click="agregarLinea">
+              + Agregar insumo
+            </button>
+            <span v-if="!hayInsumosDisponibles" class="receta-empty">
+              No hay insumos activos; créalos en Inventario.
+            </span>
+          </div>
+        </fieldset>
+
         <div class="form-row">
           <label for="prod-imagen">Imagen (opcional)</label>
           <input
@@ -374,7 +512,7 @@ async function onToggleEstado(producto: Producto, disponible: boolean) {
     <p v-else-if="loadError" class="error" role="alert">{{ loadError }}</p>
     <p v-else-if="productos.length === 0" class="status">No se encontraron productos.</p>
 
-    <table v-else class="producto-table">
+    <table v-else class="producto-table tabla-tarjetas">
       <thead>
         <tr>
           <th></th>
@@ -391,16 +529,28 @@ async function onToggleEstado(producto: Producto, disponible: boolean) {
           <td class="thumb-cell">
             <ProductoThumbnail :src="producto.imagen_base64" :alt="producto.nombre" variant="thumb" />
           </td>
-          <td>{{ producto.nombre }}</td>
-          <td>{{ categoriaNombre(producto.categoria_id) }}</td>
-          <td>{{ formatCOP(producto.precio) }}</td>
-          <td>
+          <td class="celda-titulo">
+            {{ producto.nombre }}
+            <span
+              v-if="producto.insumos.length > 0"
+              class="insumos-badge"
+              role="img"
+              :title="`Descuenta del inventario:\n${resumenInsumos(producto)}`"
+              :aria-label="`Descuenta ${producto.insumos.length} insumo(s) del inventario`"
+            >
+              <IconPackage />
+              {{ producto.insumos.length }}
+            </span>
+          </td>
+          <td data-label="Categoría">{{ categoriaNombre(producto.categoria_id) }}</td>
+          <td data-label="Precio">{{ formatCOP(producto.precio) }}</td>
+          <td data-label="Margen">
             <span v-if="producto.costo === null" class="margen margen--sin-definir" title="Costo no definido">
               N/D
             </span>
             <span v-else class="margen">{{ formatCOP(margenFor(producto)!) }}</span>
           </td>
-          <td>
+          <td data-label="Estado">
             <div class="estado-toggle">
               <ToggleSwitch
                 :model-value="producto.estado === 'disponible'"
@@ -735,5 +885,82 @@ async function onToggleEstado(producto: Producto, disponible: boolean) {
   font-weight: 600;
   color: var(--color-text-muted);
   white-space: nowrap;
+}
+
+.receta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.receta legend {
+  padding: 0 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.receta-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.receta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.receta-select {
+  flex: 1;
+  min-width: 0;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.receta-cantidad {
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.receta-unidad {
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receta-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.insumos-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-lime);
+  background: rgba(178, 255, 5, 0.12);
+  border: 1px solid rgba(178, 255, 5, 0.35);
+  cursor: help;
+  vertical-align: middle;
 }
 </style>

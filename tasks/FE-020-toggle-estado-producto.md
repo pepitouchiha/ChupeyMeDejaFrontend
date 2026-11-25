@@ -230,7 +230,7 @@ Verificaciones puntuales pedidas:
 - **No reintroduce el bug de FE-011**: el body enviado es literalmente `{ estado: nuevoEstado }` (objeto con una sola
   clave), serializado vía `JSON.stringify` en `apiClient.patch` — no hay `undefined`/`null` colándose para
   `nombre`/`categoria_id`/`precio`/`imagen_base64`. Confirmado además en vivo contra el backend real (login con
-  `admin@brainfreeze.com`, `PATCH /productos/14` con body `{"estado":"agotado"}`): la respuesta y el `GET` posterior
+  `admin@chupeymedeja.com`, `PATCH /productos/14` con body `{"estado":"agotado"}`): la respuesta y el `GET` posterior
   muestran `nombre`, `precio`, `imagen_base64` intactos, solo `estado` cambia. El router (`actualizar_producto`) usa
   `payload.estado is not None` y `model_dump(exclude_unset=True)` para los demás campos opcionales, consistente con
   el fix de FE-011.

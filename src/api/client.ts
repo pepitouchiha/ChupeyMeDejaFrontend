@@ -1,4 +1,4 @@
-import { getToken } from '../composables/useAuth'
+import { cerrarSesion, getSedeActivaId, getToken } from '../composables/useAuth'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL as string | undefined
 
@@ -25,6 +25,18 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
   auth?: boolean
 }
 
+// FastAPI devuelve `detail` como string en los HTTPException, pero como lista
+// de errores `{loc, msg}` en las validaciones 422 de Pydantic.
+function detailToMessage(detail: unknown): string {
+  if (Array.isArray(detail)) {
+    const msgs = detail
+      .map((err) => (err && typeof err === 'object' && 'msg' in err ? String(err.msg) : ''))
+      .filter(Boolean)
+    return msgs.length ? msgs.join(' · ') : 'Datos inválidos.'
+  }
+  return String(detail)
+}
+
 async function request<TResponse>(
   path: string,
   { body, auth = true, headers, ...rest }: ApiRequestOptions = {},
@@ -43,6 +55,10 @@ async function request<TResponse>(
     if (token) {
       finalHeaders.set('Authorization', `Bearer ${token}`)
     }
+    const sedeId = getSedeActivaId()
+    if (sedeId !== null) {
+      finalHeaders.set('X-Sede-Id', String(sedeId))
+    }
   }
 
   let response: Response
@@ -60,10 +76,17 @@ async function request<TResponse>(
   const isJson = contentType.includes('application/json')
   const data = isJson ? await response.json().catch(() => undefined) : undefined
 
+  // Token vencido, revocado o usuario desactivado: volver al login.
+  if (response.status === 401 && auth && getToken()) {
+    cerrarSesion()
+    const destino = window.location.pathname + window.location.search
+    window.location.assign(`/login?redirect=${encodeURIComponent(destino)}`)
+  }
+
   if (!response.ok) {
     const message =
       (isJson && data && typeof data === 'object' && 'detail' in data
-        ? String((data as { detail: unknown }).detail)
+        ? detailToMessage((data as { detail: unknown }).detail)
         : undefined) ?? `Error ${response.status} al llamar a ${path}`
     throw new ApiError(response.status, message, data)
   }

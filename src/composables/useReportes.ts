@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import { getAlertasStock, getReporteHoy, getReporteMensual } from '../api/reportes'
+import { getAlertasStock, getContabilidad, getReporteHoy, getReporteMensual } from '../api/reportes'
 import { ApiError } from '../api/client'
-import type { Insumo, ReporteHoyOut, ReporteMensualOut } from '../api/types'
+import type { ContabilidadOut, Insumo, ReporteHoyOut, ReporteMensualOut } from '../api/types'
 
 export function useReportes() {
   const reporteHoy = ref<ReporteHoyOut | null>(null)
@@ -15,6 +15,31 @@ export function useReportes() {
   const alertasStock = ref<Insumo[]>([])
   const isLoadingAlertas = ref(false)
   const errorAlertas = ref('')
+
+  const contabilidad = ref<ContabilidadOut | null>(null)
+  const isLoadingContabilidad = ref(false)
+  const errorContabilidad = ref('')
+  let contabilidadReq = 0
+
+  async function loadContabilidad(desde?: string, hasta?: string): Promise<void> {
+    const req = ++contabilidadReq
+    isLoadingContabilidad.value = true
+    errorContabilidad.value = ''
+    try {
+      const data = await getContabilidad({ desde, hasta })
+      if (req === contabilidadReq) contabilidad.value = data
+    } catch (err) {
+      if (req === contabilidadReq) {
+        contabilidad.value = null
+        errorContabilidad.value = messageFor(
+          err,
+          'No fue posible cargar la contabilidad del periodo. Intenta de nuevo.',
+        )
+      }
+    } finally {
+      if (req === contabilidadReq) isLoadingContabilidad.value = false
+    }
+  }
 
   async function loadHoy(): Promise<void> {
     isLoadingHoy.value = true
@@ -68,6 +93,10 @@ export function useReportes() {
     isLoadingMensual,
     errorMensual,
     loadMensual,
+    contabilidad,
+    isLoadingContabilidad,
+    errorContabilidad,
+    loadContabilidad,
     alertasStock,
     isLoadingAlertas,
     errorAlertas,

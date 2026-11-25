@@ -92,7 +92,7 @@ Puntos verificados por lectura de código donde aparece `'tarjeta'`/
 
 **Cómo probarlo manualmente:**
 1. `npm run dev` (o usar el servidor ya corriendo en `localhost:5173`), iniciar sesión con
-   `admin@brainfreeze.com` / `Admin1234`.
+   `admin@chupeymedeja.com` / `Admin1234`.
 2. Ir a Ventas, agregar un producto al carrito, seleccionar "Transferencia" como método de
    pago y confirmar la venta — el ticket debe mostrar "Transferencia" y no debe haber error 422.
 3. Ir a Dashboard y confirmar que la venta aparece en "Últimas ventas" con el tag
@@ -119,7 +119,7 @@ Verificado por lectura de código y en vivo contra el backend real:
 - Repetí la prueba end-to-end contra el backend real: `POST /ventas` con
   `metodo_pago: "transferencia"` → `201`. Nota: esto (y mi propia
   verificación de BE-011) dejó más filas de prueba en la tabla `ventas` de
-  `brainfreeze.db` de desarrollo — no hay endpoint para revertirlas, mismo
+  `chupeymedeja.db` de desarrollo — no hay endpoint para revertirlas, mismo
   caso ya señalado por esta misma tarea; no es un hallazgo de calidad, solo
   aviso operativo para quien continúe usando este entorno.
 

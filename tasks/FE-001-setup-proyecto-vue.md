@@ -19,7 +19,7 @@ construyan sobre una base consistente.
 - Proyecto Vue 3 + TypeScript con Vite.
 - Vue Router con rutas para: login, dashboard, inventario, productos,
   categorías, ventas, mesas, contabilidad — replicando la navegación lateral
-  del mockup (`Brainfreezee Panel (offline).html`, revísalo con Grep acotado
+  del mockup (`ChupeyMeDeja Panel (offline).html`, revísalo con Grep acotado
   si necesitas confirmar textos/iconos exactos, no lo cargues completo con
   Read).
 - Guard de ruta simple: si no hay sesión/token, redirige a login (la
@@ -84,7 +84,7 @@ Estructura creada bajo `frontend/src/`:
 - `components/layout/AppSidebar.vue`: nav lateral con el orden de items tal cual
   aparece en el mockup (`Dashboard, Inventario, Productos, Ventas, Contabilidad,
   Categorías`, confirmado con Grep acotado sobre
-  `Brainfreezee Panel (offline).html`, línea única minificada). **El mockup no
+  `ChupeyMeDeja Panel (offline).html`, línea única minificada). **El mockup no
   incluye una pantalla de "Mesas"** (no aparece en su navegación ni en su estado
   `screen`), pero la tarea la pide explícitamente en el Alcance y existe
   `FE-006-pantalla-mesas.md`, así que agregué el ítem `Mesas` entre `Productos` y
@@ -158,7 +158,7 @@ Verificado en este entorno:
     `--color-purple`, más `--color-purple-deep`), y los componentes
     (`AppSidebar.vue`, `LoginView.vue`, etc.) las consumen vía `var(--color-*)`
     sin hex sueltos dispersos. ✅
-- Confirmé contra `Brainfreezee Panel (offline).html` (grep acotado) que el
+- Confirmé contra `ChupeyMeDeja Panel (offline).html` (grep acotado) que el
   orden real del mockup es Dashboard, Inventario, Productos, Ventas,
   Contabilidad, Categorías, sin "Mesas" — tal como documentan las notas. La
   decisión de insertar "Mesas" entre Productos y Ventas es razonable (la

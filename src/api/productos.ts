@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import type { Producto, ProductoCreate, ProductoUpdate } from './types'
+import type { Producto, ProductoCreate, ProductoInsumoIn, ProductoUpdate } from './types'
 
 export interface ListProductosParams {
   search?: string
@@ -20,6 +20,10 @@ export function createProducto(payload: ProductoCreate): Promise<Producto> {
 
 export function updateProducto(id: number, payload: ProductoUpdate): Promise<Producto> {
   return apiClient.patch<Producto>(`/productos/${id}`, payload)
+}
+
+export function setProductoInsumos(id: number, insumos: ProductoInsumoIn[]): Promise<Producto> {
+  return apiClient.put<Producto>(`/productos/${id}/insumos`, insumos)
 }
 
 export function deleteProducto(id: number): Promise<void> {

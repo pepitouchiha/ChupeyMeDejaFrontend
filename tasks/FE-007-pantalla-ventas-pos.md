@@ -132,14 +132,14 @@ Replicar la pantalla "Ventas" del mockup: catálogo de productos con botón
 2. End-to-end contra backend real:
    ```
    cd backend
-   DATABASE_URL="sqlite:///./test.db" ./.venv/Scripts/python.exe -m app.scripts.crear_usuario admin@brainfreeze.com "Password123"
+   DATABASE_URL="sqlite:///./test.db" ./.venv/Scripts/python.exe -m app.scripts.crear_usuario admin@chupeymedeja.com "Password123"
    DATABASE_URL="sqlite:///./test.db" ./.venv/Scripts/python.exe -m uvicorn app.main:app --reload
    ```
    ```
    cd frontend
    npm run dev
    ```
-   - Login con `admin@brainfreeze.com` / `Password123`.
+   - Login con `admin@chupeymedeja.com` / `Password123`.
    - Crear una categoría y un par de productos en `/productos`, una mesa en
      `/mesas`.
    - Ir a `/mesas`, click "Iniciar venta" en una mesa → navega a

@@ -116,7 +116,7 @@ En `frontend/src/views/MesasView.vue`:
 
 **Verificación manual contra backend real** (`localhost:8000` / `localhost:5173`,
 sin levantar otra instancia): se creó un usuario de prueba temporal
-(`fe038.test@brainfreeze.local`, vía `app.scripts.crear_usuario`) y dos mesas
+(`fe038.test@chupeymedeja.local`, vía `app.scripts.crear_usuario`) y dos mesas
 de prueba (`FE038-QA-A`, `FE038-QA-B`) para no interferir con datos de otras
 tareas QA ya presentes en la base:
   - Mesa A: `POST /ventas/abrir {mesa_id}` → queda `ocupada` con pedido
@@ -136,7 +136,7 @@ tareas QA ya presentes en la base:
     dejarían de marcarla).
   - Limpieza: se descartó/canceló las ventas de prueba, se eliminaron las
     mesas `FE038-QA-A`/`FE038-QA-B` y el usuario temporal directamente de
-    `brainfreeze.db` (la mesa con venta directa cancelada no se podía borrar
+    `chupeymedeja.db` (la mesa con venta directa cancelada no se podía borrar
     vía API por el guard existente de "tiene ventas asociadas", así que se
     limpió a nivel de fila igual que la venta y el usuario). No se tocaron
     mesas/ventas preexistentes de otras tareas (ej. ventas `abierta`

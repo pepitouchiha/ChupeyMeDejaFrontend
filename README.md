@@ -1,13 +1,13 @@
-# BrainFreeze — Frontend
+# Chupe y Me Deja — Frontend
 
-Interfaz web de BrainFreeze, un sistema de punto de venta para una heladería/granizadería: login, catálogo de categorías/productos (con imagen), mesas (con pedidos progresivos), punto de venta (POS), historial de órdenes y dashboard de contabilidad.
+Interfaz web de Chupe y Me Deja, un sistema de punto de venta para una heladería/granizadería: login, catálogo de categorías/productos (con imagen), mesas (con pedidos progresivos), punto de venta (POS), historial de órdenes y dashboard de contabilidad.
 
 > **Inventario deshabilitado temporalmente**: el link y la ruta `/inventario`
 > están desactivados (redirige a `/dashboard`). El flujo actual implica
 > demasiado trabajo manual para el dueño del negocio y se va a repensar antes
 > de reactivarlo — ver [`tasks/FE-039-rediseno-inventario.md`](./tasks/FE-039-rediseno-inventario.md).
 
-Construido con **Vue 3 + TypeScript + Vite + Vue Router**, consumiendo el [backend de BrainFreeze](../backend) vía una API REST. Identidad visual neón propia (logo, tipografía con degradado, acentos de color por sección) y componentes de interacción construidos a mano — modales, toasts, switch, stepper numérico — sin ninguna librería de UI de terceros.
+Construido con **Vue 3 + TypeScript + Vite + Vue Router**, consumiendo el [backend de Chupe y Me Deja](../backend) vía una API REST. Identidad visual neón propia (logo, tipografía con degradado, acentos de color por sección) y componentes de interacción construidos a mano — modales, toasts, switch, stepper numérico — sin ninguna librería de UI de terceros.
 
 ## Stack
 
@@ -34,7 +34,7 @@ src/
   utils/               # formatCOP() para montos en pesos colombianos
   assets/
     styles/            # tokens.css (paleta neón + utilidades como .brand-gradient-text) + base.css
-    brand/             # logo de BrainFreeze
+    brand/             # logo de Chupe y Me Deja
 ```
 
 ## Setup

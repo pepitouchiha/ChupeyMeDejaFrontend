@@ -3,8 +3,8 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '../api/auth'
 import { ApiError } from '../api/client'
-import { setToken, setUserEmail } from '../composables/useAuth'
-import logoBrainFreeze from '../assets/brand/logo-brainfreeze.jpeg'
+import { guardarSesion } from '../composables/useAuth'
+import logoChupeyMeDeja from '../assets/brand/logo-chupeymedeja.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,13 +25,19 @@ async function onSubmit() {
   isSubmitting.value = true
   try {
     const response = await login({ email: email.value.trim(), password: password.value })
-    setToken(response.access_token)
-    setUserEmail(email.value.trim())
-    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : '/dashboard'
+    guardarSesion(response)
+    const redirect =
+      typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/')
+        ? route.query.redirect
+        : '/dashboard'
     router.push(redirect)
   } catch (err) {
     if (err instanceof ApiError && err.status === 401) {
       errorMessage.value = 'Correo o contraseña incorrectos.'
+    } else if (err instanceof ApiError && (err.status === 403 || err.status === 429)) {
+      errorMessage.value = err.message
+    } else if (err instanceof ApiError && err.status === 0) {
+      errorMessage.value = 'No hay conexión con el servidor. Revisa tu internet e intenta de nuevo.'
     } else {
       errorMessage.value = 'No fue posible iniciar sesión. Intenta de nuevo.'
     }
@@ -43,9 +49,8 @@ async function onSubmit() {
 
 <template>
   <section class="login-card">
-    <img class="brand-logo" :src="logoBrainFreeze" alt="Logo BrainFreeze" width="72" height="72" />
-    <div class="brand brand-gradient-text">BRAINFREEZEE</div>
-    <p class="subtitle">Panel de gestión — acceso administrador</p>
+    <img class="brand-logo" :src="logoChupeyMeDeja" alt="Chupe y Me Deja" width="190" height="210" />
+    <p class="subtitle">Ingresa con la cuenta que te entregaron</p>
 
     <form @submit.prevent="onSubmit">
       <div class="field">
@@ -55,7 +60,9 @@ async function onSubmit() {
           v-model="email"
           type="email"
           autocomplete="username"
-          placeholder="admin@brainfreezee.club"
+          placeholder="tucorreo@ejemplo.com"
+          inputmode="email"
+          autocapitalize="off"
           :disabled="isSubmitting"
         />
       </div>
@@ -79,13 +86,13 @@ async function onSubmit() {
       </button>
     </form>
 
-    <p class="footer">Sala Brainfreezee · Sistema interno de gestión</p>
+    <p class="footer">Chupe y Me Deja · Asunción y Machado, Copacabana</p>
   </section>
 </template>
 
 <style scoped>
 .login-card {
-  width: min(380px, 90vw);
+  width: min(380px, 100%);
   padding: 38px 32px;
   border-radius: 20px;
   background: var(--color-surface-alt);
@@ -95,20 +102,9 @@ async function onSubmit() {
 
 .brand-logo {
   display: block;
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 14px;
-  border-radius: 50%;
-  object-fit: cover;
-  box-shadow: 0 0 30px rgba(123, 44, 191, 0.5);
-}
-
-.brand {
-  font-weight: 700;
-  font-size: 24px;
-  letter-spacing: 0.01em;
-  text-align: center;
-  margin-bottom: 6px;
+  width: 190px;
+  height: auto;
+  margin: 0 auto 10px;
 }
 
 .subtitle {
@@ -131,11 +127,12 @@ async function onSubmit() {
 
 .field input {
   width: 100%;
+  min-height: 46px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   padding: 11px 13px;
-  font-size: 14px;
+  font-size: 16px; /* 16px evita el zoom automático en iPhone */
 }
 
 .field input:focus {
@@ -178,5 +175,16 @@ async function onSubmit() {
   margin: 16px 0 0;
   color: var(--color-text-muted);
   opacity: 0.7;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 20px;
+    border-radius: 16px;
+  }
+
+  .brand-logo {
+    width: 150px;
+  }
 }
 </style>
